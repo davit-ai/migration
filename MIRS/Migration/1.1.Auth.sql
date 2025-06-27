@@ -63,136 +63,175 @@ BEGIN
         , [UserStatus]
         , [IsFirstLogin])
 
-        SELECT NEWID()                                                                                id,
-               r.email_id                                                                             email,
-               CASE
-                   WHEN r.parent_agent_cd = '000000'
-                       THEN NULL
-                   ELSE r.parent_agent_cd
-                   END                                                                                partnerCode,
-               r.sub_agent_cd                                                                         PartnerBranchCode,
-               isnull(r.is_allow_2fa, 0)              as                                              isMfaEnabled,
-               (SELECT JSON_QUERY(
-                               (SELECT CASE
-                                           WHEN Sunday = 'y'
-                                               THEN 'true'
-                                           ELSE 'false'
-                                           END AS                 IsAllowed,
-                                       r.login_start_time + ':00' LoginStartTime,
-                                       r.login_end_time + ':00'   LoginEndTime
-                                FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)) AS Sunday,
-                       JSON_QUERY(
-                               (SELECT CASE
-                                           WHEN Monday = 'y'
-                                               THEN 'true'
-                                           ELSE 'false'
-                                           END AS                 IsAllowed,
-                                       r.login_start_time + ':00' LoginStartTime,
-                                       r.login_end_time + ':00'   LoginEndTime
-                                FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)) AS Monday,
-                       JSON_QUERY(
-                               (SELECT CASE
-                                           WHEN Tuesday = 'y'
-                                               THEN 'true'
-                                           ELSE 'false'
-                                           END AS                 IsAllowed,
-                                       r.login_start_time + ':00' LoginStartTime,
-                                       r.login_end_time + ':00'   LoginEndTime
-                                FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)) AS Tuesday,
-                       JSON_QUERY(
-                               (SELECT CASE
-                                           WHEN Wednesday = 'y'
-                                               THEN 'true'
-                                           ELSE 'false'
-                                           END AS                 IsAllowed,
-                                       r.login_start_time + ':00' LoginStartTime,
-                                       r.login_end_time + ':00'   LoginEndTime
-                                FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)) AS Wednesday,
-                       JSON_QUERY(
-                               (SELECT CASE
-                                           WHEN Thursday = 'y'
-                                               THEN 'true'
-                                           ELSE 'false'
-                                           END AS                 IsAllowed,
-                                       r.login_start_time + ':00' LoginStartTime,
-                                       r.login_end_time + ':00'   LoginEndTime
-                                FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)) AS Thursday,
-                       JSON_QUERY(
-                               (SELECT CASE
-                                           WHEN Friday = 'y'
-                                               THEN 'true'
-                                           ELSE 'false'
-                                           END AS                 IsAllowed,
-                                       r.login_start_time + ':00' LoginStartTime,
-                                       r.login_end_time + ':00'   LoginEndTime
-                                FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)) AS Friday,
-                       JSON_QUERY(
-                               (SELECT CASE
-                                           WHEN Saturday = 'y'
-                                               THEN 'true'
-                                           ELSE 'false'
-                                           END AS                 IsAllowed,
-                                       r.login_start_time + ':00' LoginStartTime,
-                                       r.login_end_time + ':00'   LoginEndTime
-                                FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)) AS Saturday
-                FROM mirs_restore.dbo.remit_user ru
-                WHERE ru.parent_agent_cd = r.parent_agent_cd
-                  AND ru.remit_user_cd = r.remit_user_cd
-                FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) AS                                              LoginDaysInfo,
-               force_pwd_change_in_days                                                               ForcePasswordChangeinDays,
-               max_inactive_days                                                                      MaxInactiveDays,
-               (SELECT email_id                                                   AS Email,
-                       JSON_QUERY('[' + COALESCE(QUOTENAME(phone_no_1, '"'), '') + IIF(phone_no_1 IS NOT NULL
-                                                                                           AND phone_no_2 IS NOT NULL,
-                                                                                       ',', '') +
-                                  COALESCE(QUOTENAME(phone_no_2, '"'), '') + ']') AS Phones,
-                       JSON_QUERY('[' + COALESCE(QUOTENAME(fax_no_1, '"'), '') + IIF(fax_no_1 IS NOT NULL
-                                                                                         AND fax_no_2 IS NOT NULL, ',',
-                                                                                     '') +
-                                  COALESCE(QUOTENAME(fax_no_2, '"'), '') + ']')   AS Faxes
-                FROM mirs_restore.dbo.remit_user ru
-                WHERE ru.parent_agent_cd = r.parent_agent_cd
-                  AND ru.remit_user_cd = r.remit_user_cd
-                FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) AS                                              ContactInfo,
-               NULL                                   AS                                              LastPasswordChangeDate,
-               r.created_on as                                              CreatedBy,
-               r.modified_on as                                              UpdatedBy,
-               '12EE8A95-234E-4E92-BF02-57BF162D7348' as                                              CreatedBy,
-               '12EE8A95-234E-4E92-BF02-57BF162D7348' as                                              UpdatedBy,
-               r.[remit_user_cd]                                                                      UserName,
-               UPPER(TRIM(REPLACE([MIRS_RESTORE].[dbo].[f_RemoveNonASCII](r.[remit_user_cd], 2), ' ',
-                                  '')))                                                               NormalizedUserName,
-               UPPER(r.email_id)                                                                      NormalizedEmail,
-               1                                      as                                              EmailConfirmed,
-               'AQAAAAIAAYagAAAAEIrCq4l5xE0TiDzIX/ptgl2Ere05nBk7lqVKP0pFS+BpXrRCVHLAk0UH412DRHUuvQ==' PasswordHash, --  Default Password: P@ssword
-               null                                                                                   SecurityStamp,
-               null                                                                                   ConcurrencyStamp,
-               phone_no_1                                                                             PhoneNumber,
-               0                                                                                      PhoneNumberConfirmed,
-               0                                                                                      twoFactorEnabled,
-               NULL                                                                                   LockoutEnd,
-               CASE
-                   WHEN is_lock = 1
-                       THEN 0
-                   ELSE 1
-                   END                                                                                lockoutEnabled,
-               isnull(failed_login_attempts, 0)       as                                              AccessFailedCount,
-               null                                   as                                              LastLoginDate,
-               mykad_passportno                                                                       idCardNumber, -- Required mapping
-               id_card_type_cd                                                                        idCardType,   -- Required mapping
-               max_idle_time_in_min                                                                   MaxIdleTimeInMinutes,
-               UPPER(TRIM([user_name]))                                                               FullName,
-               department                                                                             DepartmentId,
-               case
-                   when del_flag = 'Y' then 5
-                   when is_lock = 1 then 4
-                   when remit_user_status = 'A' then 1
-                   when remit_user_status = 'I' then 2
-                   end                                                                                UserStatus,   -- required mapping
-               1                                      as                                              IsFirstLogin
-        FROM mirs_restore.dbo.remit_user r
-                 left join Auth_M1.dbo.[User] cre on cre.UserName = r.created_by
-                 left join Auth_M1.dbo.[User] mod on mod.UserName = r.modified_by;
+       INSERT INTO [Auth_M1].[dbo].[User]
+( [Id]
+, [Email]
+, [PartnerCode]
+, [PartnerBranchCode]
+, [IsMfaEnabled]
+, [LoginDaysInfo]
+, [ForcePasswordChangeInDays]
+, [MaxInactiveDays]
+, [ContactInfo]
+, [LastPasswordChangeDate]
+, [CreatedAt]
+, [UpdatedAt]
+, [CreatedBy]
+, [UpdatedBy]
+, [UserName]
+, [NormalizedUserName]
+, [NormalizedEmail]
+, [EmailConfirmed]
+, [PasswordHash]
+, [SecurityStamp]
+, [ConcurrencyStamp]
+, [PhoneNumber]
+, [PhoneNumberConfirmed]
+, [TwoFactorEnabled]
+, [LockoutEnd]
+, [LockoutEnabled]
+, [AccessFailedCount]
+, [LastLoginDate]
+, [IdCardNumber]
+, [IdCardType]
+, [MaxIdleTimeInMinutes]
+, [FullName]
+, [DepartmentId]
+, [UserStatus]
+, [IsFirstLogin])
+
+SELECT NEWID()                                                                                id,
+       r.email_id                                                                             email,
+       CASE
+           WHEN r.parent_agent_cd = '000000'
+               THEN NULL
+           ELSE r.parent_agent_cd
+           END                                                                                partnerCode,
+       r.sub_agent_cd                                                                         PartnerBranchCode,
+       isnull(r.is_allow_2fa, 0)                                              as              isMfaEnabled,
+       (SELECT JSON_QUERY(
+                       (SELECT CASE
+                                   WHEN Sunday = 'y'
+                                       THEN 'true'
+                                   ELSE 'false'
+                                   END AS                 IsAllowed,
+                               r.login_start_time + ':00' LoginStartTime,
+                               r.login_end_time + ':00'   LoginEndTime
+                        FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)) AS Sunday,
+               JSON_QUERY(
+                       (SELECT CASE
+                                   WHEN Monday = 'y'
+                                       THEN 'true'
+                                   ELSE 'false'
+                                   END AS                 IsAllowed,
+                               r.login_start_time + ':00' LoginStartTime,
+                               r.login_end_time + ':00'   LoginEndTime
+                        FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)) AS Monday,
+               JSON_QUERY(
+                       (SELECT CASE
+                                   WHEN Tuesday = 'y'
+                                       THEN 'true'
+                                   ELSE 'false'
+                                   END AS                 IsAllowed,
+                               r.login_start_time + ':00' LoginStartTime,
+                               r.login_end_time + ':00'   LoginEndTime
+                        FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)) AS Tuesday,
+               JSON_QUERY(
+                       (SELECT CASE
+                                   WHEN Wednesday = 'y'
+                                       THEN 'true'
+                                   ELSE 'false'
+                                   END AS                 IsAllowed,
+                               r.login_start_time + ':00' LoginStartTime,
+                               r.login_end_time + ':00'   LoginEndTime
+                        FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)) AS Wednesday,
+               JSON_QUERY(
+                       (SELECT CASE
+                                   WHEN Thursday = 'y'
+                                       THEN 'true'
+                                   ELSE 'false'
+                                   END AS                 IsAllowed,
+                               r.login_start_time + ':00' LoginStartTime,
+                               r.login_end_time + ':00'   LoginEndTime
+                        FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)) AS Thursday,
+               JSON_QUERY(
+                       (SELECT CASE
+                                   WHEN Friday = 'y'
+                                       THEN 'true'
+                                   ELSE 'false'
+                                   END AS                 IsAllowed,
+                               r.login_start_time + ':00' LoginStartTime,
+                               r.login_end_time + ':00'   LoginEndTime
+                        FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)) AS Friday,
+               JSON_QUERY(
+                       (SELECT CASE
+                                   WHEN Saturday = 'y'
+                                       THEN 'true'
+                                   ELSE 'false'
+                                   END AS                 IsAllowed,
+                               r.login_start_time + ':00' LoginStartTime,
+                               r.login_end_time + ':00'   LoginEndTime
+                        FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)) AS Saturday
+        FROM mirs_restore.dbo.remit_user ru
+        WHERE ru.parent_agent_cd = r.parent_agent_cd
+          AND ru.remit_user_cd = r.remit_user_cd
+        FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)                                 AS              LoginDaysInfo,
+       force_pwd_change_in_days                                                               ForcePasswordChangeinDays,
+       max_inactive_days                                                                      MaxInactiveDays,
+       (SELECT email_id                                                   AS Email,
+               JSON_QUERY('[' + COALESCE(QUOTENAME(phone_no_1, '"'), '') + IIF(phone_no_1 IS NOT NULL
+                                                                                   AND phone_no_2 IS NOT NULL,
+                                                                               ',', '') +
+                          COALESCE(QUOTENAME(phone_no_2, '"'), '') + ']') AS Phones,
+               JSON_QUERY('[' + COALESCE(QUOTENAME(fax_no_1, '"'), '') + IIF(fax_no_1 IS NOT NULL
+                                                                                 AND fax_no_2 IS NOT NULL, ',',
+                                                                             '') +
+                          COALESCE(QUOTENAME(fax_no_2, '"'), '') + ']')   AS Faxes
+        FROM mirs_restore.dbo.remit_user ru
+        WHERE ru.parent_agent_cd = r.parent_agent_cd
+          AND ru.remit_user_cd = r.remit_user_cd
+        FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)                                 AS              ContactInfo,
+       NULL                                                                   AS              LastPasswordChangeDate,
+       r.created_on                                                                           createdAT,
+       r.modified_on                                                                          UpdatedAt,
+       '12EE8A95-234E-4E92-BF02-57BF162D7348'                                 as              CreatedBy,
+       '12EE8A95-234E-4E92-BF02-57BF162D7348'                                 as              UpdatedBy,
+       r.[remit_user_cd]                                                                      UserName,
+       UPPER(TRIM(REPLACE([MIRS_RESTORE].[dbo].[f_RemoveNonASCII](r.[remit_user_cd], 2), ' ',
+                          '')))                                                               NormalizedUserName,
+       UPPER(r.email_id)                                                                      NormalizedEmail,
+       1                                                                      as              EmailConfirmed,
+       'AQAAAAIAAYagAAAAEIrCq4l5xE0TiDzIX/ptgl2Ere05nBk7lqVKP0pFS+BpXrRCVHLAk0UH412DRHUuvQ==' PasswordHash, --  Default Password: P@ssword
+       null                                                                                   SecurityStamp,
+       null                                                                                   ConcurrencyStamp,
+
+       case
+           when len(phone_no_1) < 7 then NULL
+           else
+               concat('+', MIRS_RESTORE.dbo.StripNonNumerics(phone_no_1)) end as              PhoneNumber,
+       0                                                                                      PhoneNumberConfirmed,
+       0                                                                                      twoFactorEnabled,
+       NULL                                                                                   LockoutEnd,
+       CASE
+           WHEN is_lock = 1
+               THEN 0
+           ELSE 1
+           END                                                                                lockoutEnabled,
+       isnull(failed_login_attempts, 0)                                       as              AccessFailedCount,
+       null                                                                   as              LastLoginDate,
+       mykad_passportno                                                                       idCardNumber, -- Required mapping
+       id_card_type_cd                                                                        idCardType,   -- Required mapping
+       max_idle_time_in_min                                                                   MaxIdleTimeInMinutes,
+       UPPER(TRIM([user_name]))                                                               FullName,
+       department                                                                             DepartmentId,
+       case
+           when del_flag = 'Y' then 5
+           when is_lock = 1 then 4
+           when remit_user_status = 'A' then 1
+           when remit_user_status = 'I' then 2
+           end                                                                                UserStatus,   -- required mapping
+       1                                                                      as              IsFirstLogin
+FROM mirs_restore.dbo.remit_user r
 
         SET @MigratedRows = @@ROWCOUNT;
 
