@@ -226,15 +226,13 @@ select newid()                                                      as Id,
 from MIRS_RESTORE.dbo.remit_role r
          left join Auth_M1.dbo.[User] cre on cre.UserName = r.created_by
          left join Auth_M1.dbo.[User] mod on mod.UserName = r.modified_by
-         inner join AuthServiceSIT.dbo.Role aor on aor.Name = r.remit_role_name;
+         left join AuthServiceSIT.dbo.Role aor on aor.Name = r.remit_role_name;
 		 SET @MigratedRows = @@ROWCOUNT;
 
 insert into [Auth_M1].dbo.MigratedReport(DatabaseName,TableName,MigratedRow)
 values('Auth','Role',@MigratedRows)
 
 end
-
-
 
 BEGIN
 
