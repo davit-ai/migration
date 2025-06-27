@@ -100,6 +100,43 @@ BEGIN
 , [UserStatus]
 , [IsFirstLogin])
 
+INSERT INTO [Auth_M1].[dbo].[User]
+( [Id]
+, [Email]
+, [PartnerCode]
+, [PartnerBranchCode]
+, [IsMfaEnabled]
+, [LoginDaysInfo]
+, [ForcePasswordChangeInDays]
+, [MaxInactiveDays]
+, [ContactInfo]
+, [LastPasswordChangeDate]
+, [CreatedAt]
+, [UpdatedAt]
+, [CreatedBy]
+, [UpdatedBy]
+, [UserName]
+, [NormalizedUserName]
+, [NormalizedEmail]
+, [EmailConfirmed]
+, [PasswordHash]
+, [SecurityStamp]
+, [ConcurrencyStamp]
+, [PhoneNumber]
+, [PhoneNumberConfirmed]
+, [TwoFactorEnabled]
+, [LockoutEnd]
+, [LockoutEnabled]
+, [AccessFailedCount]
+, [LastLoginDate]
+, [IdCardNumber]
+, [IdCardType]
+, [MaxIdleTimeInMinutes]
+, [FullName]
+, [DepartmentId]
+, [UserStatus]
+, [IsFirstLogin])
+
 SELECT NEWID()                                                                                id,
        r.email_id                                                                             email,
        CASE
@@ -196,7 +233,10 @@ SELECT NEWID()                                                                  
        r.modified_on                                                                          UpdatedAt,
        '12EE8A95-234E-4E92-BF02-57BF162D7348'                                 as              CreatedBy,
        '12EE8A95-234E-4E92-BF02-57BF162D7348'                                 as              UpdatedBy,
-       r.[remit_user_cd]                                                                      UserName,
+       case
+           when del_flag = 'Y' then concat(r.[remit_user_cd], '_Y')
+           when remit_user_status = 'I' then concat(r.[remit_user_cd], '_I')
+           else r.[remit_user_cd] end                                                         UserName,
        UPPER(TRIM(REPLACE([MIRS_RESTORE].[dbo].[f_RemoveNonASCII](r.[remit_user_cd], 2), ' ',
                           '')))                                                               NormalizedUserName,
        UPPER(r.email_id)                                                                      NormalizedEmail,
@@ -231,7 +271,7 @@ SELECT NEWID()                                                                  
            when remit_user_status = 'I' then 2
            end                                                                                UserStatus,   -- required mapping
        1                                                                      as              IsFirstLogin
-FROM mirs_restore.dbo.remit_user r
+FROM mirs_restore.dbo.remit_user r;
 
         SET @MigratedRows = @@ROWCOUNT;
 

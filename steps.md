@@ -1,3 +1,9 @@
+Step 0 
+ - Update the phone number which are max length then actual column size
+ 
+select phone_no_1,user_name,(concat('+',MIRS_RESTORE.dbo.StripNonNumerics(phone_no_1))) from MIRS_RESTORE.dbo.remit_user where len(concat('+',MIRS_RESTORE.dbo.StripNonNumerics(phone_no_1))) > 15
+
+
 Step 1
  - Migration of Auth Service -> 'User' , 'Department' , 'Role' , 'UserRole'
  - store procedure name : spMigrationAuthTables
