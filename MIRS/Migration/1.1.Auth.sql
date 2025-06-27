@@ -139,8 +139,8 @@ BEGIN
                 WHERE ru.parent_agent_cd = r.parent_agent_cd
                   AND ru.remit_user_cd = r.remit_user_cd
                 FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) AS                                              LoginDaysInfo,
-               force_pwd_change_in_days                                                               ForcePasswordChnageinDays,
-               max_inactive_days                                                                      MaxInactivdeDays,
+               force_pwd_change_in_days                                                               ForcePasswordChangeinDays,
+               max_inactive_days                                                                      MaxInactiveDays,
                (SELECT email_id                                                   AS Email,
                        JSON_QUERY('[' + COALESCE(QUOTENAME(phone_no_1, '"'), '') + IIF(phone_no_1 IS NOT NULL
                                                                                            AND phone_no_2 IS NOT NULL,
@@ -155,8 +155,8 @@ BEGIN
                   AND ru.remit_user_cd = r.remit_user_cd
                 FOR JSON PATH, WITHOUT_ARRAY_WRAPPER) AS                                              ContactInfo,
                NULL                                   AS                                              LastPasswordChangeDate,
-               r.created_on                                                                           createdAT,
-               r.modified_on                                                                          UpdatedAt,
+               r.created_on as                                              CreatedBy,
+               r.modified_on as                                              UpdatedBy,
                '12EE8A95-234E-4E92-BF02-57BF162D7348' as                                              CreatedBy,
                '12EE8A95-234E-4E92-BF02-57BF162D7348' as                                              UpdatedBy,
                r.[remit_user_cd]                                                                      UserName,
