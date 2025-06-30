@@ -14,4 +14,10 @@ where remit_user_cd = 'BD150019401'
   and email_id = 'mgr.lalmonirhat@aibl.com.bd
 opmgr.lalmonirhat@aibl.com.bd';
 
-- update MIRS_MigrationDB.dbo.remit_user set phone_no_1 = '8801717785613'  where phone_no_1 = '008801717785613' and remit_user_cd = 'BD01114602301'
+- update MIRS_MigrationDB.dbo.remit_user set phone_no_1 = '8801717785613'  where phone_no_1 = '008801717785613' and remit_user_cd = 'BD01114602301';
+
+
+
+- UPDATE AuthServicePreprod.dbo.[User]
+SET FullName = N'Admin'
+WHERE Id = N'12EE8A95-234E-4E92-BF02-57BF162D7348'; for user made through code

@@ -211,3 +211,20 @@ LEFT JOIN Auth_M1.dbo.Role rm
 WHERE u.Id NOT IN (
     SELECT UserId FROM Auth_M1.dbo.UserRole
 );
+
+
+
+WITH RankedRemitUsers AS (SELECT r.*,
+                                 RANK() OVER (PARTITION BY r.remit_user_cd ORDER BY r.parent_agent_cd) AS rk
+                          FROM MIRS_MigrationDB.dbo.remit_user r)
+update u
+set u.CreatedBy = c.id,
+    u.UpdatedBy = m.id
+FROM RankedRemitUsers r
+         JOIN AuthServicePreprod.dbo.[User] u
+              ON u.UserName = CASE
+                                  WHEN r.rk >= 2 THEN CONCAT(r.remit_user_cd, '_', r.parent_agent_cd)
+                                  ELSE r.remit_user_cd
+                  END
+         left join AuthServicePreprod.dbo.[User] c on c.UserName = r.created_by
+         left join AuthServicePreprod.dbo.[User] m on m.UserName = r.modified_by;

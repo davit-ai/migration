@@ -210,7 +210,11 @@ FROM MIRS_MigrationDB.dbo.remit_user r;
             set u.CreatedBy = c.id,
                 u.UpdatedBy = m.id
             from AuthServicePreprod.dbo.[User] u
-                     join MIRS_MigrationDB.dbo.remit_user r on r.remit_user_cd = u.UserName
+                     join MIRS_MigrationDB.dbo.remit_user r on CASE
+                                  WHEN r.del_flag = 'Y' THEN CONCAT(r.remit_user_cd, '_Y')
+                                  WHEN r.remit_user_status = 'I' THEN CONCAT(r.remit_user_cd, '_I')
+                                  ELSE r.remit_user_cd
+                  END = u.UserName
                      left join AuthServicePreprod.dbo.[User] c on c.UserName = r.created_by
                      left join AuthServicePreprod.dbo.[User] m on m.UserName = r.modified_by
         commit
