@@ -241,8 +241,8 @@ SELECT NEWID()                                                                  
                           '')))                                                               NormalizedUserName,
        UPPER(r.email_id)                                                                      NormalizedEmail,
        1                                                                      as              EmailConfirmed,
-       'AQAAAAIAAYagAAAAEIrCq4l5xE0TiDzIX/ptgl2Ere05nBk7lqVKP0pFS+BpXrRCVHLAk0UH412DRHUuvQ==' PasswordHash, --  Default Password: P@ssword
-       null                                                                                   SecurityStamp,
+       'AQAAAAIAAYagAAAAEGy+TtCkmkHycZ6IDbeOpQ9erJfWlNpSkUKd1wUkBkdOXOqqI4UslnchgRfAhnytkw==' PasswordHash, --  Default Password: Admin@1234
+       replace(newid(),'-','')                                                                                   SecurityStamp,
        null                                                                                   ConcurrencyStamp,
 
        case
@@ -322,11 +322,17 @@ FROM mirs_restore.dbo.remit_user r;
     BEGIN
 
         INSERT INTO Auth_M1.dbo.UserRole(UserId, RoleId)
-        select u.Id  as UserId,
-               rm.Id as RoleId
-        FROM MIRS_RESTORE.dbo.remit_user r
-                 join Auth_M1.dbo.[User] u on u.UserName = r.remit_user_cd
-                 join Auth_M1.dbo.Role rm on rm.MIRS3RefNumber = r.remit_role_cd
+        SELECT u.Id  AS UserId,
+       rm.Id AS RoleId
+FROM MIRS_RESTORE.dbo.remit_user r
+         JOIN Auth_M1.dbo.[User] u
+              ON u.UserName = CASE
+                                  WHEN r.del_flag = 'Y' THEN CONCAT(r.remit_user_cd, '_Y')
+                                  WHEN r.remit_user_status = 'I' THEN CONCAT(r.remit_user_cd, '_I')
+                                  ELSE r.remit_user_cd
+                  END
+         LEFT JOIN Auth_M1.dbo.Role rm
+                   ON rm.MIRS3RefNumber = r.remit_role_cd;
         --where r.parent_agent_cd in ('000000', 'MY0001')
         -- and r.remit_role_cd in ('00', '07')
         -- and u.id not in (select Userid from Auth_M1.dbo.UserRole);
