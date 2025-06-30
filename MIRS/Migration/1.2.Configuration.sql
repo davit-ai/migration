@@ -1993,10 +1993,10 @@ join ConfigurationService_Migration.dbo.CommissionRule_Migration m on m.comm_sha
 
 
 ----------- ################ ForexRule Migration   ################ -------------
-DROP TABLE IF EXISTS ConfigurationService_Migration.dbo.ForexRuleMigration;
+DROP TABLE IF EXISTS ConfigurationService_Migration.dbo.ForexRuleMigrations;
 
 SELECT *
-into ConfigurationService_Migration.dbo.ForexRuleMigration
+into ConfigurationService_Migration.dbo.ForexRuleMigrations
 FROM (SELECT NEWID() as ForexId, f.forex_tag_no,
              f.from_crncy_cd                        as CollectingCurrencyCode,
              case
@@ -2115,7 +2115,7 @@ select ForexId as id, CollectingCurrencyCode,
                       UpdatedBy,
                       UpdatedByName,
                       IsDeleted
-      from ConfigurationService_Migration.dbo.ForexRuleMigration;
+      from ConfigurationService_Migration.dbo.ForexRuleMigrations;
 
 
 
@@ -2197,7 +2197,7 @@ DROP  TABLE if exists #FOREX_TAG_NO
 
 select forex_tag_no,RuleName,count(1) CNT
 INTO #FOREX_TAG_NO
-from ConfigurationService_Migration.dbo.ForexRuleMigration
+from ConfigurationService_Migration.dbo.ForexRuleMigrations
 group by forex_tag_no,RuleName
 
 
@@ -2262,7 +2262,7 @@ SELECT newid() as Id,
        UpdatedByName,
        IsDeleted
 FROM
-    ConfigurationService_Migration.dbo.ForexRuleMigration f
+    ConfigurationService_Migration.dbo.ForexRuleMigrations f
 
 ----------- ################ CollectingPartnerBranchForexRuleDetail Migration   ################ -------------
 
@@ -3294,7 +3294,7 @@ where p.[prefund_type] = 'C';
 ----- Delete tables after Mimgration
 
 DROP TABLE IF EXISTS ConfigurationService_Migration.dbo.CommissionRule_Migration;
-DROP TABLE IF EXISTS ConfigurationService_Migration.dbo.ForexRuleMigration;
+DROP TABLE IF EXISTS ConfigurationService_Migration.dbo.ForexRuleMigrations;
 DROP TABLE IF EXISTS ConfigurationService_Migration.dbo.PrefundLimitValidationRuleMigration1;
 DROP TABLE IF EXISTS ConfigurationService_Migration.dbo.PrefundLimitValidationRuleMigration;
 DROP TABLE IF EXISTS ConfigurationService_Migration.dbo.ConfigurationService_Migration..PayingPartnerRoute
