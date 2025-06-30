@@ -28,3 +28,9 @@ Step 4
 - Migration of Auth Service -> 'Partner', 'PartnerBranch','Setting'
 - 1.3.Auth.sql
 - store procedure name : spMigrationAuthTablesAfterConfiguration
+
+
+
+
+--- All of the patching that was done before migration are in
+ - patching.md

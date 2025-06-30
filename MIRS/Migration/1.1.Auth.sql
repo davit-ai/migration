@@ -8,25 +8,25 @@ BEGIN
 
     begin
         --- Department Table
-        set identity_insert [Auth_M1].dbo.Department ON
-        insert into [Auth_M1].dbo.Department
+        set identity_insert [AuthServicePreprod].dbo.Department ON
+        insert into [AuthServicePreprod].dbo.Department
         (Id, Name)
 
         select ref_code, ref_desc
-        from MIRS_RESTORE.dbo.ref_code_table_dtl
+        from MIRS_MigrationDB.dbo.ref_code_table_dtl
         where ref_rec_type = 'DEPARTMENT'
 -- and ref_code != 1  -- if already insert discard from this condition
-        set identity_insert [Auth_M1].dbo.Department OFf
+        set identity_insert [AuthServicePreprod].dbo.Department OFf
 
         SET @MigratedRows = @@ROWCOUNT;
 
-        insert into [Auth_M1].dbo.MigratedReport(DatabaseName, TableName, MigratedRow)
+        insert into [AuthServicePreprod].dbo.MigratedReport(DatabaseName, TableName, MigratedRow)
         values ('Auth', 'Department', @MigratedRows)
 
     end
 
     begin
-INSERT INTO [Auth_M1].[dbo].[User]
+INSERT INTO [AuthServicePreprod].[dbo].[User]
 ( [Id]
 , [Email]
 , [PartnerCode]
@@ -135,7 +135,7 @@ SELECT NEWID()                                                                  
                                r.login_start_time + ':00' LoginStartTime,
                                r.login_end_time + ':00'   LoginEndTime
                         FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)) AS Saturday
-        FROM mirs_restore.dbo.remit_user ru
+        FROM MIRS_MigrationDB.dbo.remit_user ru
         WHERE ru.parent_agent_cd = r.parent_agent_cd
           AND ru.remit_user_cd = r.remit_user_cd
         FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)                                 AS              LoginDaysInfo,
@@ -150,7 +150,7 @@ SELECT NEWID()                                                                  
                                                                                  AND fax_no_2 IS NOT NULL, ',',
                                                                              '') +
                           COALESCE(QUOTENAME(fax_no_2, '"'), '') + ']')   AS Faxes
-        FROM mirs_restore.dbo.remit_user ru
+        FROM MIRS_MigrationDB.dbo.remit_user ru
         WHERE ru.parent_agent_cd = r.parent_agent_cd
           AND ru.remit_user_cd = r.remit_user_cd
         FOR JSON PATH, WITHOUT_ARRAY_WRAPPER)                                 AS              ContactInfo,
@@ -163,7 +163,7 @@ SELECT NEWID()                                                                  
            when del_flag = 'Y' then concat(r.[remit_user_cd], '_Y')
            when remit_user_status = 'I' then concat(r.[remit_user_cd], '_I')
            else r.[remit_user_cd] end                                                         UserName,
-       UPPER(TRIM(REPLACE([MIRS_RESTORE].[dbo].[f_RemoveNonASCII](r.[remit_user_cd], 2), ' ',
+       UPPER(TRIM(REPLACE([MIRS_MigrationDB].[dbo].[f_RemoveNonASCII](r.[remit_user_cd], 2), ' ',
                           '')))                                                               NormalizedUserName,
        UPPER(r.email_id)                                                                      NormalizedEmail,
        1                                                                      as              EmailConfirmed,
@@ -174,7 +174,7 @@ SELECT NEWID()                                                                  
        case
            when len(phone_no_1) < 7 then NULL
            else
-               concat('+', MIRS_RESTORE.dbo.StripNonNumerics(phone_no_1)) end as              PhoneNumber,
+               concat('+', MIRS_MigrationDB.dbo.StripNonNumerics(phone_no_1)) end as              PhoneNumber,
        0                                                                                      PhoneNumberConfirmed,
        0                                                                                      twoFactorEnabled,
        NULL                                                                                   LockoutEnd,
@@ -197,11 +197,11 @@ SELECT NEWID()                                                                  
            when remit_user_status = 'I' then 2
            end                                                                                UserStatus,   -- required mapping
        1                                                                      as              IsFirstLogin
-FROM mirs_restore.dbo.remit_user r;
+FROM MIRS_MigrationDB.dbo.remit_user r;
 
         SET @MigratedRows = @@ROWCOUNT;
 
-        insert into [Auth_M1].dbo.MigratedReport(DatabaseName, TableName, MigratedRow)
+        insert into [AuthServicePreprod].dbo.MigratedReport(DatabaseName, TableName, MigratedRow)
         values ('Auth', 'User', @MigratedRows);
 
 
@@ -209,17 +209,17 @@ FROM mirs_restore.dbo.remit_user r;
             update u
             set u.CreatedBy = c.id,
                 u.UpdatedBy = m.id
-            from Auth_M1.dbo.[User] u
-                     join MIRS_RESTORE.dbo.remit_user r on r.remit_user_cd = u.UserName
-                     left join Auth_M1.dbo.[User] c on c.UserName = r.created_by
-                     left join Auth_M1.dbo.[User] m on m.UserName = r.modified_by
+            from AuthServicePreprod.dbo.[User] u
+                     join MIRS_MigrationDB.dbo.remit_user r on r.remit_user_cd = u.UserName
+                     left join AuthServicePreprod.dbo.[User] c on c.UserName = r.created_by
+                     left join AuthServicePreprod.dbo.[User] m on m.UserName = r.modified_by
         commit
     END
 
     begin
-        insert into Auth_M1.dbo.Role(Id, Portal, IsActive, CreatedAt, UpdatedAt, CreatedBy, UpdatedBy, DeletedBy,
+        insert into AuthServicePreprod.dbo.Role(Id, Portal, IsActive, CreatedAt, UpdatedAt, CreatedBy, UpdatedBy, DeletedBy,
                                      DeletedAt,
-                                     Name, NormalizedName, ConcurrencyStamp, MIRS3RefNumber)
+                                     Name, NormalizedName, ConcurrencyStamp, MIRS3RefNumber,IsAdmin)
 
         select newid()                                                      as Id,
                aor.Portal,
@@ -233,39 +233,41 @@ FROM mirs_restore.dbo.remit_user r;
                aor.Name,
                aor.NormalizedName,
                aor.ConcurrencyStamp,
-               r.remit_role_cd                                              as 'MIRS3RefNumber'
-        from MIRS_RESTORE.dbo.remit_role r
-                 left join Auth_M1.dbo.[User] cre on cre.UserName = r.created_by
-                 left join Auth_M1.dbo.[User] mod on mod.UserName = r.modified_by
+               r.remit_role_cd                                              as 'MIRS3RefNumber',
+               0 as IsAdmin
+        from MIRS_MigrationDB.dbo.remit_role r
+                 left join AuthServicePreprod.dbo.[User] cre on cre.UserName = r.created_by
+                 left join AuthServicePreprod.dbo.[User] mod on mod.UserName = r.modified_by
                  left join AuthServiceSIT.dbo.Role aor on aor.Name = r.remit_role_name;
         SET @MigratedRows = @@ROWCOUNT;
 
-        insert into [Auth_M1].dbo.MigratedReport(DatabaseName, TableName, MigratedRow)
+        insert into [AuthServicePreprod].dbo.MigratedReport(DatabaseName, TableName, MigratedRow)
         values ('Auth', 'Role', @MigratedRows)
 
     end
 
     BEGIN
 
-        INSERT INTO Auth_M1.dbo.UserRole(UserId, RoleId)
+        INSERT INTO AuthServicePreprod.dbo.UserRole(UserId, RoleId)
         SELECT u.Id  AS UserId,
        rm.Id AS RoleId
-FROM MIRS_RESTORE.dbo.remit_user r
-         JOIN Auth_M1.dbo.[User] u
+FROM MIRS_MigrationDB.dbo.remit_user r
+         JOIN AuthServicePreprod.dbo.[User] u
               ON u.UserName = CASE
                                   WHEN r.del_flag = 'Y' THEN CONCAT(r.remit_user_cd, '_Y')
                                   WHEN r.remit_user_status = 'I' THEN CONCAT(r.remit_user_cd, '_I')
                                   ELSE r.remit_user_cd
                   END
-         LEFT JOIN Auth_M1.dbo.Role rm
-                   ON rm.MIRS3RefNumber = r.remit_role_cd;
+         LEFT JOIN AuthServicePreprod.dbo.Role rm
+                   ON rm.MIRS3RefNumber = r.remit_role_cd
+                    WHERE rm.id is not null
         --where r.parent_agent_cd in ('000000', 'MY0001')
         -- and r.remit_role_cd in ('00', '07')
-        -- and u.id not in (select Userid from Auth_M1.dbo.UserRole);
+        -- and u.id not in (select Userid from AuthServicePreprod.dbo.UserRole);
 
         SET @MigratedRows = @@ROWCOUNT;
 
-        insert into [Auth_M1].dbo.MigratedReport(DatabaseName, TableName, MigratedRow)
+        insert into [AuthServicePreprod].dbo.MigratedReport(DatabaseName, TableName, MigratedRow)
         values ('Auth', 'UserRole', @MigratedRows)
     END
 END
