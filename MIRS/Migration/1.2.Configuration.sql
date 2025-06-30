@@ -26,7 +26,7 @@ select u.UserName          as UserName,
        m.FullName          as UpdatedByName,
        u.Id                as Id,
        u.PartnerCode       as PartnerCode,
-       2                   as Portal,
+       r.portal                   as Portal,
        0                   as IsDeleted
 from AuthService_Migration.dbo.[User] u
 left join AuthService_Migration.dbo.[User] c on c.Id = u.CreatedBy
