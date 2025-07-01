@@ -274,5 +274,12 @@ FROM MIRS_MigrationDB.dbo.remit_user r
         insert into [AuthServicePreprod].dbo.MigratedReport(DatabaseName, TableName, MigratedRow)
         values ('Auth', 'UserRole', @MigratedRows)
     END
+
+
+    INSERT INTO RolePageAction (PageActionId, RoleId)
+SELECT pa.Id, 'C7C1F365-1C3D-4ECF-B34A-C3E68BC9EB68'
+FROM PageAction pa
+inner join [Page] p  on p.[key] = pa.PageKey
+where p.Portal = 1
 END
 go

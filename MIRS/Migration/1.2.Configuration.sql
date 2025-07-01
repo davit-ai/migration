@@ -787,6 +787,7 @@ select
      case when agent_type = 'DMTO' then 1
         when agent_type = 'IMTO' then 2
         when agent_type = 'MMTO' then 3
+        else ''
         end as type,
     case when del_flag = 'Y' THEN 1 else 0 end IsDeleted
 from MIRS_RESTORE.dbo.parent_agent pa
