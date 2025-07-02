@@ -21,3 +21,22 @@ opmgr.lalmonirhat@aibl.com.bd';
 - UPDATE AuthServicePreprod.dbo.[User]
 SET FullName = N'Admin'
 WHERE Id = N'12EE8A95-234E-4E92-BF02-57BF162D7348'; for user made through code
+
+
+
+
+
+after patching: 
+WITH CleanedFaxes AS (
+    SELECT
+        p.code,
+        '[' + STRING_AGG('"' + REPLACE([value], ' ', '') + '"', ',') + ']' AS CleanedFaxesJson
+    FROM ConfigurationServicePreprod.dbo.Partner p
+    CROSS APPLY OPENJSON(p.ContactInfo, '$.Faxes')
+    GROUP BY p.code
+)
+UPDATE p
+SET ContactInfo = JSON_MODIFY(p.ContactInfo, '$.Faxes', JSON_QUERY(cf.CleanedFaxesJson))
+FROM ConfigurationServicePreprod.dbo.Partner p
+JOIN CleanedFaxes cf ON p.code = cf.code
+where p.code = 'MY0001'
