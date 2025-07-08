@@ -2320,7 +2320,39 @@ where remit_proc_cd = 'R';
 
 ----------- ################ PartnerCurrency Migration   ################ -------------
 
-INSERT INTO ConfigurationService_Migration.dbo.PartnerCurrency
+WITH RankedRows AS (SELECT NEWID()                                AS Id,
+                           p.Id                                   AS PartnerCountryId,
+                           cc.crncy_cd                            AS CurrencyCode,
+                           p.CreatedAt,
+                           'DA64C48D-5E9A-43AB-B80C-0F86152E70DC' AS CreatedBy,
+                           'superadmin'                           AS CreatedByName,
+                           p.UpdatedAt,
+                           'DA64C48D-5E9A-43AB-B80C-0F86152E70DC' AS UpdatedBy,
+                           'superadmin'                           AS UpdatedByName,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY pp.code,cc.agent_type_cd, cc.remit_proc_cd
+                               ORDER BY p.Id
+                               )                                  AS rn
+                    FROM ConfigurationServicePreprod.dbo.PartnerCountry p
+                             INNER JOIN MIRS_MigrationDB.dbo.parent_agent_remit_proc_crncy cc
+                                        ON cc.parent_agent_cd = p.PartnerCode
+                                            AND p.CurrencyType = CASE
+                                                                     WHEN remit_proc_cd = 'C' AND agent_type_cd = 'C'
+                                                                         THEN 1
+                                                                     WHEN remit_proc_cd = 'P' AND agent_type_cd = 'P'
+                                                                         THEN 2
+                                                                     WHEN remit_proc_cd = 'R' AND agent_type_cd = 'C'
+                                                                         THEN 3
+                                                                     WHEN remit_proc_cd = 'R' AND agent_type_cd = 'P'
+                                                                         THEN 4
+                                                END
+                             INNER JOIN ConfigurationServicePreprod.dbo.Partner pp
+                                        ON pp.Code = p.PartnerCode
+                    WHERE
+                          ((cc.agent_type_cd = cc.remit_proc_cd)
+                       OR (cc.remit_proc_cd = 'R' AND cc.agent_type_cd IN ('C', 'P'))))
+
+INSERT INTO ConfigurationServicePreprod.dbo.PartnerCurrency
 (Id,
  PartnerCountryId,
  CurrencyCode,
@@ -2330,17 +2362,17 @@ INSERT INTO ConfigurationService_Migration.dbo.PartnerCurrency
  CreatedByName,
  UpdatedBy,
  UpdatedByName)
-select NEWID()                                as Id,
-       p.Id                                   as PartnerCountryId,
-       c.BaseCurrencyCode                     as CurrencyCode,
-       p.CreatedAt                            as CreatedAt,
-       p.UpdatedAt                            as UpdatedAt,
-       'DA64C48D-5E9A-43AB-B80C-0F86152E70DC' AS CreatedBy,
-       'superadmin'                           AS CreatedByName,
-       'DA64C48D-5E9A-43AB-B80C-0F86152E70DC' AS UpdatedBy,
-       'superadmin'                           AS UpdatedByName
-from ConfigurationService_Migration.dbo.PartnerCountry p
-inner join ConfigurationService_Migration.dbo.Country c on c.Code = p.CountryCode;
+SELECT id,
+       partnercountryid,
+       currencycode,
+       CreatedAt,
+       UpdatedAt,
+       createdby,
+       createdbyname,
+       updatedby,
+       updatedbyname
+FROM RankedRows
+WHERE rn = 1
 
 ----------- ################ PartnerCurrency Migration   ################ -------------
 
