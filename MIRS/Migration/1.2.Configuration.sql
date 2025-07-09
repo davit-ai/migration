@@ -870,7 +870,7 @@ from (select row_number() over (partition by s.sub_agent_cd order by s.sub_agent
                           when s.sub_agent_status = 'I' THEN 2
                           else 3 end                                                                      as Status,
                       s.parent_agent_cd                                                                   as PartnerCode,
-                      case when s.agent_type_cd = 'B' THEN 3 WHEN s.agent_type_cd = 'C' THEN 2 else 1 end as AgentType,
+                      case when s.parent_agent_cd = 'MY0001' and left(S.sub_agent_cd,2) ='AS' and left(S.sub_agent_name,3) ='NME' THEN 3 WHEN s.parent_agent_cd = 'MY0001' and left(S.sub_agent_cd,2) ='AS' and left(S.sub_agent_name,3) !='NME' THEN 1 else 0 end as AgentType,
                       isnull(s.alpha_code, '')                                                            as AlphaCode,
                       isnull(s.outlet_code, '')                                                           as OutletCode,
                       cast(null as nvarchar(50))                                                          as ParentBranchCode, -- need to check with developer
