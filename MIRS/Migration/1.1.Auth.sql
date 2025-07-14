@@ -186,7 +186,7 @@ SELECT NEWID()                                                                  
        isnull(failed_login_attempts, 0)                                       as              AccessFailedCount,
        null                                                                   as              LastLoginDate,
        mykad_passportno                                                                       idCardNumber, -- Required mapping
-       id_card_type_cd                                                                        idCardType,   -- Required mapping
+       case when id_card_type_cd in (3,13) then 1 else id_card_type_cd end as                                                                         idCardType,   -- Required mapping
        max_idle_time_in_min                                                                   MaxIdleTimeInMinutes,
        UPPER(TRIM([user_name]))                                                               FullName,
        department                                                                             DepartmentId,
